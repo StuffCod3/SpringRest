@@ -1,5 +1,7 @@
 package ru.stuff.spring.DAO;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.stuff.spring.models.Person;
 
@@ -9,37 +11,32 @@ import java.util.List;
 @Component
 public class PersonDAO {
 
-    private List<Person> people;
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public PersonDAO(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
     private int countId;
 
-    public PersonDAO(){
-        people = new ArrayList<>();
-
-        people.add(new Person(++countId, "Evgeny", "evgen@mail.ru", 20));
-        people.add(new Person(++countId, "Art", "art@mail.ru", 20));
-        people.add(new Person(++countId, "Nikita", "nekit@mail.ru", 20));
-        people.add(new Person(++countId, "Erik", "erik@mail.ru", 20));
-    }
-
     public List<Person> showAllPerson(){
-        return people;
+        return jdbcTemplate.query("SELECT * FROM Person", new PersonMapper());
     }
 
     public Person showPersonById(int id){
-        return people.stream().filter(person -> person.getId() == id).findAny().orElse(null);
+        return jdbcTemplate.query("SELECT * FROM Person WHERE id=?", new Object[]{id}, new PersonMapper())
+                .stream().findAny().orElse(null);
     }
 
     public void save(Person person){
-        person.setId(++countId);
-        people.add(person);
+        jdbcTemplate.update("INSERT INTO Person VALUES(1, ?, ?, ?)", person.getName(), person.getEmail(), person.getAge());
     }
 
     public void update(int id, Person updatePerson){
-        Person personToBeUpdated = showPersonById(id);
-        personToBeUpdated.setName(updatePerson.getName());
+        jdbcTemplate.update("UPDATE Person SET name=?, email=?, age=? WHERE id=?", updatePerson.getName(), updatePerson.getEmail(), updatePerson.getAge(), id);
     }
 
     public void delete(int id){
-        people.removeIf(person -> person.getId() == id);
+        jdbcTemplate.update("DELETE FROM Person WHERE id=?", id);
     }
 }
